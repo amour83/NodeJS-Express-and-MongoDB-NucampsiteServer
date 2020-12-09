@@ -2,7 +2,6 @@ const express = require('express');
 const Campsite = require('../models/campsite');
 const authenticate = require('../authenticate');
 
-
 const campsiteRouter = express.Router();
 
 campsiteRouter.route('/')
@@ -51,11 +50,11 @@ campsiteRouter.route('/:campsiteId')
     })
     .catch(err => next(err));
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`);
 })
-.put(authenticate.verifyUser, authenticate.verifyAdmin,(req, res, next) => {
+.put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     Campsite.findByIdAndUpdate(req.params.campsiteId, {
         $set: req.body
     }, { new: true })
@@ -66,7 +65,7 @@ campsiteRouter.route('/:campsiteId')
     })
     .catch(err => next(err));
 })
-.delete(authenticate.verifyUser, authenticate.verifyAdmin,(req, res, next) => {
+.delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     Campsite.findByIdAndDelete(req.params.campsiteId)
     .then(response => {
         res.statusCode = 200;
@@ -97,6 +96,7 @@ campsiteRouter.route('/:campsiteId/comments')
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
         if (campsite) {
+            req.body.author = req.user._id;
             campsite.comments.push(req.body);
             campsite.save()
             .then(campsite => {
@@ -114,7 +114,6 @@ campsiteRouter.route('/:campsiteId/comments')
     .catch(err => next(err));
 })
 .put(authenticate.verifyUser, (req, res) => {
-
     res.statusCode = 403;
     res.end(`PUT operation not supported on /campsites/${req.params.campsiteId}/comments`);
 })
@@ -162,7 +161,7 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
     })
     .catch(err => next(err));
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}/comments/${req.params.commentId}`);
 })
@@ -199,8 +198,7 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
             return next(err);
         }
     })
-    .catch(err => next('err'));
-
+    .catch(err => next(err));
 })
 .delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findById(req.params.campsiteId)
@@ -232,4 +230,5 @@ campsiteRouter.route('/:campsiteId/comments/:commentId')
     })
     .catch(err => next(err));
 });
+
 module.exports = campsiteRouter;
